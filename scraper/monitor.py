@@ -47,6 +47,7 @@ META_FILE = DATA / "meta.json"
 
 MAX_EVENTS = 8000
 MAX_HISTORY = 60
+MISSING_RUNS = 2             # so oft hintereinander fehlen, bis "nicht mehr gelistet"
 PAGE_SIZE = 100
 REQUEST_PAUSE = 1.0          # Sekunden zwischen Abrufen (schonend)
 USER_AGENT = "Mozilla/5.0 (compatible; shop-price-monitor/1.0)"
@@ -280,38 +281,75 @@ def event_line(e: dict) -> str:
     return f"{label}: {e['title']} – {price}"
 
 
-def build_message(events: list[dict], dashboard: str | None) -> tuple[str, str]:
+def rank_events(events: list[dict]) -> list[dict]:
+    """Wichtigstes zuerst: größte Preissenkung, dann höchster Rabatt."""
+    def rank(e):
+        if e.get("old_price") is not None and e.get("change_pct") is not None and e["change_pct"] < 0:
+            return (0, e["change_pct"])
+        return (1, -(discount_pct(e["price"], e["compare_at"]) or 0))
+    return sorted(events, key=rank)
+
+
+def push_title(e: dict) -> str:
+    label = LABELS.get(e["type"], e["type"])
+    if e.get("old_price") is not None and e.get("change_pct") is not None:
+        return f'{SHOP_NAME} · {label} {e["change_pct"]:+.0f} %'
+    d = discount_pct(e["price"], e["compare_at"])
+    return f"{SHOP_NAME} · {label}" + (f" −{d} %" if d else "")
+
+
+def push_body(e: dict) -> str:
+    if e.get("old_price") is not None and e.get("change_pct") is not None:
+        price = f'{eur(e["old_price"])} → {eur(e["price"])}'
+    else:
+        price = eur(e["price"])
+        if e.get("compare_at") and discount_pct(e["price"], e["compare_at"]):
+            price += f" (statt {eur(e['compare_at'])})"
+    return f"{e['title']}\n{price}"
+
+
+def ntfy_publish(payload: dict):
+    """Veröffentlicht per JSON (UTF-8-sicher, unterstützt Klick-Link und Bild)."""
+    server = (os.environ.get("NTFY_SERVER") or "https://ntfy.sh").rstrip("/")
+    headers = {"Content-Type": "application/json"}
+    if os.environ.get("NTFY_TOKEN"):
+        headers["Authorization"] = f'Bearer {os.environ["NTFY_TOKEN"]}'
+    req = urllib.request.Request(server + "/", data=json.dumps(payload).encode("utf-8"),
+                                 headers=headers, method="POST")
+    urllib.request.urlopen(req, timeout=20).read()
+
+
+def send_ntfy(events: list[dict]):
+    """Eine Nachricht pro Artikel – Tippen öffnet direkt die Produktseite."""
+    topic = os.environ.get("NTFY_TOPIC")
+    if not topic:
+        return
+    limit = int(os.environ.get("MAX_PUSH_PER_RUN") or "10")
+    single, rest = events[:limit], events[limit:]
+    for e in single:
+        payload = {"topic": topic, "title": push_title(e), "message": push_body(e),
+                   "click": e["url"], "tags": ["shopping_cart"]}
+        if e.get("image"):
+            payload["attach"] = e["image"]
+        ntfy_publish(payload)
+        time.sleep(0.5)
+    if rest:
+        lines = [f"• {event_line(e)}" for e in rest[:20]]
+        if len(rest) > 20:
+            lines.append(f"… und {len(rest) - 20} weitere")
+        ntfy_publish({"topic": topic, "title": f"{SHOP_NAME}: {len(rest)} weitere Änderungen",
+                      "message": "\n".join(lines), "tags": ["shopping_cart"]})
+
+
+def text_digest(events: list[dict]) -> tuple[str, str]:
     counts: dict[str, int] = {}
     for e in events:
         counts[e["type"]] = counts.get(e["type"], 0) + 1
     title = f"{SHOP_NAME}: " + ", ".join(f"{n}× {LABELS[k].split(' ', 1)[1]}" for k, n in counts.items())
-    # Größte Preissenkungen / Rabatte zuerst
-    def rank(e):
-        if e["type"] == "price_drop":
-            return (0, e.get("change_pct", 0))
-        return (1, -(discount_pct(e["price"], e["compare_at"]) or 0))
-    ordered = sorted(events, key=rank)
-    lines = [event_line(e) for e in ordered[:25]]
-    if len(events) > 25:
-        lines.append(f"… und {len(events) - 25} weitere")
-    if dashboard:
-        lines.append(f"\nDashboard: {dashboard}")
-    return title, "\n".join(lines)
-
-
-def send_ntfy(title: str, body: str, dashboard: str | None):
-    topic = os.environ.get("NTFY_TOPIC")
-    if not topic:
-        return
-    server = (os.environ.get("NTFY_SERVER") or "https://ntfy.sh").rstrip("/")
-    headers = {"Title": title.encode("utf-8"), "Tags": "shopping_cart"}
-    if dashboard:
-        headers["Click"] = dashboard
-    if os.environ.get("NTFY_TOKEN"):
-        headers["Authorization"] = f'Bearer {os.environ["NTFY_TOKEN"]}'
-    req = urllib.request.Request(f"{server}/{topic}", data=body.encode("utf-8"),
-                                 headers=headers, method="POST")
-    urllib.request.urlopen(req, timeout=20).read()
+    lines = [f"{event_line(e)}\n{e['url']}" for e in events[:40]]
+    if len(events) > 40:
+        lines.append(f"… und {len(events) - 40} weitere")
+    return title, "\n\n".join(lines)
 
 
 def send_telegram(title: str, body: str):
@@ -338,7 +376,7 @@ def send_email(title: str, body: str):
         s.sendmail(sender, [a.strip() for a in to.split(",")], msg.as_string())
 
 
-def notify(events: list[dict]):
+def select_for_notify(events: list[dict]) -> list[dict]:
     wanted = notify_types()
     events = [e for e in events if e["type"] in wanted]
     min_change = float(os.environ.get("MIN_PRICE_CHANGE_PCT") or "0")
@@ -348,16 +386,20 @@ def notify(events: list[dict]):
     if min_disc:
         events = [e for e in events if e["type"] != "new"
                   or (discount_pct(e["price"], e["compare_at"]) or 0) >= min_disc]
+    return rank_events(events)
+
+
+def notify(events: list[dict]):
+    events = select_for_notify(events)
     if not events:
         return
-    dashboard = os.environ.get("DASHBOARD_URL") or None
-    title, body = build_message(events, dashboard)
-    for fn, args in ((send_ntfy, (title, body, dashboard)),
+    title, body = text_digest(events)
+    for fn, args in ((send_ntfy, (events,)),
                      (send_telegram, (title, body)),
                      (send_email, (title, body))):
         try:
             fn(*args)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001  – Benachrichtigung darf Lauf nicht abbrechen
             print(f"Warnung: {fn.__name__} fehlgeschlagen: {e}", file=sys.stderr)
 
 
@@ -384,6 +426,23 @@ def main() -> int:
     if old_items and len(current) < 0.8 * len(old_items):
         print(f"Nur {len(current)} von {len(old_items)} Artikeln geladen – Abbruch.", file=sys.stderr)
         return 1
+
+    # Flacker-Schutz: Ein Artikel gilt erst als "nicht mehr gelistet", wenn er in
+    # MISSING_RUNS Läufen hintereinander fehlt. Kurzes Verschwinden (Warenkorb-
+    # Reservierung, verschobene Seitenaufteilung während des Abrufs) wird ignoriert.
+    pending: dict = state.get("pending_missing", {})
+    fetched = len(current)
+    for vid in list(pending):
+        if vid in current:
+            pending.pop(vid)
+    for vid, o in old_items.items():
+        if vid not in current:
+            cnt = pending.get(vid, {}).get("count", 0) + 1
+            if cnt < MISSING_RUNS:
+                pending[vid] = {"count": cnt}
+                current[vid] = o            # vorerst als weiterhin gelistet behandeln
+            else:
+                pending.pop(vid, None)
 
     events = [] if baseline else diff(old_items, current, gone, now)
 
@@ -419,7 +478,8 @@ def main() -> int:
                         "history": history.get(vid, [])})
     catalog.sort(key=lambda x: x["title"].lower())
 
-    state = {"items": current, "history": history, "first_seen": first_seen, "gone": gone}
+    state = {"items": current, "history": history, "first_seen": first_seen, "gone": gone,
+             "pending_missing": pending}
     STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, separators=(",", ":")), "utf-8")
     CATALOG_FILE.write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")), "utf-8")
     EVENTS_FILE.write_text(json.dumps(all_events, ensure_ascii=False, separators=(",", ":")), "utf-8")
@@ -434,7 +494,9 @@ def main() -> int:
     })
     META_FILE.write_text(json.dumps(meta, ensure_ascii=False, indent=1), "utf-8")
 
-    print(f"{now}: {len(current)} Artikel, {len(events)} Änderungen"
+    if pending:
+        print(f"  {len(pending)} Artikel fehlen erstmals – werden erst beim nächsten Fehlen gemeldet")
+    print(f"{now}: {len(current)} Artikel ({fetched} geladen), {len(events)} Änderungen"
           f"{' (Basislauf)' if baseline else ''}, {meta['run_seconds']} s")
     for e in events[:50]:
         print("  " + event_line(e))

@@ -40,7 +40,7 @@ alle 30 Minuten.
 
 | Variable | Beispiel | Wirkung |
 |---|---|---|
-| `DASHBOARD_URL` | `https://DEINNAME.github.io/outlet46-monitor/` | Link in der Push-Nachricht |
+| `MAX_PUSH_PER_RUN` | `5` | Höchstens so viele Einzel-Push-Nachrichten pro Lauf (Standard 10), der Rest kommt gesammelt in einer Nachricht |
 | `NOTIFY_TYPES` | `new,price_drop` | Nur diese Ereignisse pushen (Standard: `new,price_drop,back_in_stock`) |
 | `MIN_PRICE_CHANGE_PCT` | `10` | Preissenkungen unter 10 % nicht pushen |
 | `MIN_DISCOUNT_PCT` | `70` | Neue Artikel nur pushen, wenn sie mindestens 70 % unter UVP liegen |
@@ -49,6 +49,8 @@ Bei Outlet46 kommen täglich viele neue Artikel dazu. Wenn dir das zu viele Push
 helfen `MIN_DISCOUNT_PCT` und `MIN_PRICE_CHANGE_PCT`. Im Dashboard erscheint trotzdem alles.
 
 ---
+
+**Push-Nachrichten:** Jede Änderung kommt als eigene Nachricht mit Produktbild. Ein Tipp darauf öffnet direkt die Produktseite im Shop. Die wichtigsten Änderungen (größte Preissenkung, höchster Rabatt) kommen zuerst.
 
 ## Dashboard
 - **Neuigkeiten:** Alle Änderungen chronologisch, filterbar. Was seit deinem letzten Besuch neu ist, ist blau markiert.
@@ -64,6 +66,8 @@ helfen `MIN_DISCOUNT_PCT` und `MIN_PRICE_CHANGE_PCT`. Im Dashboard erscheint tro
 - **Schutz vor Fehlalarmen:** Der Monitor vergleicht pro Kategorie die geladene Artikelzahl
   mit der Zahl, die der Shop selbst anzeigt. Fehlen über 15 %, bricht er ab, ohne etwas zu melden.
   Dasselbe passiert, wenn insgesamt plötzlich über 20 % fehlen.
+- **Flacker-Schutz:** Ein Artikel gilt erst als „nicht mehr gelistet“, wenn er zwei Läufe hintereinander fehlt.
+  So lösen kurz reservierte Artikel oder eine verschobene Seitenaufteilung keine falschen „Wieder da“-Meldungen aus.
 - Artikel mit 0,00 € (Datenfehler im Shop) werden ignoriert.
 - Interne No-Name-Marken des Shops (z. B. „O46BPX (MB1)“) heißen im Dashboard „Outlet46 No-Name“.
 - Ändert der Shop sein Design, kann das Auslesen fehlschlagen. Dann bricht der Lauf ab, statt
