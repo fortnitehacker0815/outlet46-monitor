@@ -40,7 +40,6 @@ alle 30 Minuten.
 
 | Variable | Beispiel | Wirkung |
 |---|---|---|
-| `MAX_PUSH_PER_RUN` | `5` | Höchstens so viele Einzel-Push-Nachrichten pro Lauf (Standard 10), der Rest kommt gesammelt in einer Nachricht |
 | `NOTIFY_TYPES` | `new,price_drop` | Nur diese Ereignisse pushen (Standard: `new,price_drop,back_in_stock`) |
 | `MIN_PRICE_CHANGE_PCT` | `10` | Preissenkungen unter 10 % nicht pushen |
 | `MIN_DISCOUNT_PCT` | `70` | Neue Artikel nur pushen, wenn sie mindestens 70 % unter UVP liegen |
@@ -50,7 +49,7 @@ helfen `MIN_DISCOUNT_PCT` und `MIN_PRICE_CHANGE_PCT`. Im Dashboard erscheint tro
 
 ---
 
-**Push-Nachrichten:** Jede Änderung kommt als eigene Nachricht mit Produktbild. Ein Tipp darauf öffnet direkt die Produktseite im Shop. Die wichtigsten Änderungen (größte Preissenkung, höchster Rabatt) kommen zuerst.
+**Push-Nachrichten:** Jede einzelne Änderung kommt als eigene Nachricht mit Produktbild, nie gesammelt. Ein Tipp darauf öffnet direkt die Produktseite. Bei vielen Änderungen auf einmal werden die Nachrichten in ruhigem Tempo nacheinander verschickt (ca. 1 pro Sekunde, ab der 50. ca. alle 5 Sekunden), damit ntfy keine verwirft. Die wichtigsten (größte Preissenkung, höchster Rabatt) kommen zuerst.
 
 ## Dashboard
 - **Neuigkeiten:** Alle Änderungen chronologisch, filterbar. Was seit deinem letzten Besuch neu ist, ist blau markiert.
