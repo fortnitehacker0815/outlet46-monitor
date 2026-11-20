@@ -226,7 +226,7 @@ function render(){
   const onSale = catalog.filter(c=>c.discount_pct && c.available);
   const avgOff = onSale.length ? Math.round(onSale.reduce((a,c)=>a+c.discount_pct,0)/onSale.length) : 0;
   const sinceVisit = lastVisit ? real.filter(e=>new Date(e.ts)>new Date(lastVisit)).length : 0;
-  const newList = catalog.filter(isNewInShop);
+  const newList = catalog.filter(c=>c.available && isNewInShop(c));
 
   $("#kpis").innerHTML = [
     [meta.products ?? "–", "Produkte im Shop"],
@@ -239,7 +239,7 @@ function render(){
   $("#n-feed").textContent = real.length;
   $("#n-new").textContent = newList.length;
   $("#n-deals").textContent = onSale.length;
-  $("#n-all").textContent = catalog.length;
+  $("#n-all").textContent = catalog.filter(c=>c.available).length;
   const cheap = catalog.filter(c=>c.available && c.price!=null);
   $("#n-cheap").textContent = cheap.length;
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.tab===ui.tab));
@@ -270,7 +270,7 @@ function renderFeed(){
     if(e.old_price!=null && e.change_pct!=null){
       right = `<span class="old">${eur(e.old_price)}</span><span class="price">${eur(e.price)}</span><br><span class="pct ${e.change_pct<0?"down":"up"}">${e.change_pct>0?"+":""}${e.change_pct.toLocaleString("de-DE")} %</span>`;
     } else right = priceHtml(e.price, e.compare_at);
-    html += `<a class="ev ${fresh?"fresh":""}" href="#" data-id="${esc(e.id)}" data-url="${esc(e.url)}">
+    html += `<a class="ev ${fresh?"fresh":""}" href="${esc(e.url)}" target="_blank" rel="noopener" title="Im Shop öffnen" data-id="${esc(e.id)}">
       <div class="thumb" style="background-image:url('${esc(imgSmall(e.image))}')"></div>
       <div><div class="t">${esc(e.title)}</div>
       <div class="m">${fresh?'<span class="badge b-fresh">NEU</span>':""}<span class="badge b-${e.type}">${LABEL[e.type]}</span>${fmtTime(e.ts)}</div></div>
@@ -307,10 +307,9 @@ function renderGrid(list, emptyMsg, showDate){
 
 function renderTable(){
   const cats = [...new Set(catalog.map(c=>c.type).filter(Boolean))].sort();
-  let list = catalog.slice();
+  let list = catalog.filter(c=>c.available);
   if(ui.q) list = list.filter(c=>(c.title+" "+c.vendor+" "+c.sku).toLowerCase().includes(ui.q));
   if(ui.cat) list = list.filter(c=>c.type===ui.cat);
-  if(ui.avail) list = list.filter(c=>c.available);
   const [k,dir] = ui.sort;
   const total = list.length;
   list.sort((a,b)=>{const x=a[k]??-1e12, y=b[k]??-1e12; return (typeof x==="string"? x.localeCompare(y,"de") : x-y)*dir;});
@@ -340,7 +339,13 @@ function bindSearch(){
   q.oninput = () => { ui.q=q.value.trim().toLowerCase(); const pos=q.selectionStart; render(); const n=$("#q"); n.focus(); n.setSelectionRange(pos,pos); };
 }
 function bindOpen(){
-  document.querySelectorAll("[data-id]").forEach(el=>el.onclick=ev=>{ev.preventDefault(); openItem(el.dataset.id, el.dataset.url);});
+  // Direkt zur Produktseite im Shop (neuer Tab) – ohne Zwischen-Pop-up
+  document.querySelectorAll("[data-id]").forEach(el=>{
+    if(el.tagName==="A") return;            // Feed-Einträge sind echte Links
+    const c=byId.get(el.dataset.id), url=(c&&c.url)||el.dataset.url;
+    el.title="Im Shop öffnen";
+    el.onclick=()=>{ if(url) window.open(url,"_blank","noopener"); };
+  });
 }
 
 function chartSvg(h){

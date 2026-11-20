@@ -472,7 +472,9 @@ def main() -> int:
 
     catalog = []
     for vid, item in current.items():
-        catalog.append({**item, "available": True,
+        # Beim aktuellen Lauf nicht gefunden → im Dashboard sofort ausblenden
+        # (Meldung "nicht mehr gelistet" kommt erst nach dem zweiten Fehlen)
+        catalog.append({**item, "available": vid not in pending,
                         "discount_pct": discount_pct(item["price"], item["compare_at"]),
                         "first_seen": first_seen.get(vid),
                         "history": history.get(vid, [])})
