@@ -2,7 +2,7 @@ name: Outlet46 Monitor
 
 on:
   schedule:
-    - cron: "17 * * * *"     # stündlich (Minute 17); ein Lauf dauert ca. 8–10 Minuten
+    - cron: "7,37 * * * *"   # alle 30 Minuten; ein Lauf dauert ca. 3 Minuten
   workflow_dispatch: {}       # manuell auslösbar unter "Actions"
 
 permissions:

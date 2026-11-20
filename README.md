@@ -1,6 +1,6 @@
 # Outlet46 Monitor
 
-Überwacht den kompletten Katalog von **outlet46.de** (rund 4.400 Artikel) **stündlich** und meldet:
+Überwacht den kompletten Katalog von **outlet46.de** (rund 4.400 Artikel) **alle 30 Minuten** und meldet:
 
 | Ereignis | Bedeutung | Push standardmäßig |
 |---|---|---|
@@ -11,13 +11,13 @@
 | 🗑️ Nicht mehr gelistet | Ausverkauft oder entfernt | – (nur Dashboard) |
 | 🏷️ UVP geändert | Streichpreis geändert, Preis gleich | – (nur Dashboard) |
 
-**So funktioniert es:** Eine GitHub Action ruft stündlich die 10 Hauptkategorien des Shops ab
+**So funktioniert es:** Eine GitHub Action ruft alle 30 Minuten die 10 Hauptkategorien des Shops ab
 (100 Artikel pro Seite, also etwa 95 Seitenaufrufe mit Pausen dazwischen; das ist schonend für den Shop).
 Danach vergleicht sie mit dem letzten Stand und speichert die Ergebnisse in `docs/data/`.
 GitHub Pages zeigt das Dashboard (`docs/index.html`) an.
 
-Ein Lauf dauert ca. 8–10 Minuten, weil der Shop langsam antwortet. Deshalb läuft der Monitor
-stündlich statt alle 30 Minuten.
+Ein Lauf dauert ca. 3 Minuten (bei langsamem Shop bis zu 10). Der Monitor läuft
+alle 30 Minuten.
 
 ---
 
