@@ -1,13 +1,13 @@
 {
  "shop": "https://www.outlet46.de",
  "shop_name": "Outlet46",
- "last_run": "2026-11-21T21:49:58+00:00",
- "last_change": "2026-11-21T21:49:58+00:00",
- "products": 4425,
- "variants": 4425,
- "last_run_events": 50,
+ "last_run": "2026-11-22T02:03:28+00:00",
+ "last_change": "2026-11-22T02:03:28+00:00",
+ "products": 4408,
+ "variants": 4408,
+ "last_run_events": 18,
  "started": "2026-11-20T11:01:50+00:00",
- "run_seconds": 340,
+ "run_seconds": 154,
  "categories": {
   "damen-bekleidung": {
    "label": "Damenbekleidung",
@@ -47,7 +47,7 @@
   },
   "a": {
    "label": "Weitere Angebote",
-   "seen": 3267
+   "seen": 3262
   }
  }
 }
