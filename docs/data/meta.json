@@ -1,21 +1,21 @@
 {
  "shop": "https://www.outlet46.de",
  "shop_name": "Outlet46",
- "last_run": "2026-11-25T15:58:28+00:00",
- "last_change": "2026-11-25T15:58:28+00:00",
- "products": 4459,
- "variants": 4459,
- "last_run_events": 157,
+ "last_run": "2026-11-26T00:09:17+00:00",
+ "last_change": "2026-11-26T00:09:17+00:00",
+ "products": 4454,
+ "variants": 4454,
+ "last_run_events": 98,
  "started": "2026-11-20T11:01:50+00:00",
- "run_seconds": 420,
+ "run_seconds": 186,
  "categories": {
   "damen-bekleidung": {
    "label": "Damenbekleidung",
-   "seen": 690
+   "seen": 691
   },
   "herren-bekleidung": {
    "label": "Herrenbekleidung",
-   "seen": 851
+   "seen": 866
   },
   "damen-schuhe": {
    "label": "Damenschuhe",
@@ -31,7 +31,7 @@
   },
   "sport": {
    "label": "Sport",
-   "seen": 166
+   "seen": 172
   },
   "accessoires-guenstig": {
    "label": "Accessoires",
@@ -47,7 +47,7 @@
   },
   "a": {
    "label": "Weitere Angebote",
-   "seen": 3211
+   "seen": 3286
   }
  }
 }
