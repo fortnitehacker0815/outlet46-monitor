@@ -1,21 +1,21 @@
 {
  "shop": "https://www.outlet46.de",
  "shop_name": "Outlet46",
- "last_run": "2026-11-28T02:55:19+00:00",
- "last_change": "2026-11-28T02:55:19+00:00",
- "products": 4320,
- "variants": 4320,
- "last_run_events": 43,
+ "last_run": "2026-11-28T11:37:00+00:00",
+ "last_change": "2026-11-28T11:37:00+00:00",
+ "products": 4315,
+ "variants": 4315,
+ "last_run_events": 25,
  "started": "2026-11-20T11:01:50+00:00",
- "run_seconds": 152,
+ "run_seconds": 232,
  "categories": {
   "damen-bekleidung": {
    "label": "Damenbekleidung",
-   "seen": 692
+   "seen": 687
   },
   "herren-bekleidung": {
    "label": "Herrenbekleidung",
-   "seen": 855
+   "seen": 847
   },
   "damen-schuhe": {
    "label": "Damenschuhe",
@@ -27,27 +27,27 @@
   },
   "kinder": {
    "label": "Kinder",
-   "seen": 191
+   "seen": 188
   },
   "sport": {
    "label": "Sport",
-   "seen": 165
+   "seen": 164
   },
   "accessoires-guenstig": {
    "label": "Accessoires",
-   "seen": 1098
+   "seen": 1095
   },
   "home-living": {
    "label": "Home & Living",
-   "seen": 925
+   "seen": 912
   },
   "grosser-einzelstuecke-letzte-groessen-sale": {
    "label": "Einzelstücke & letzte Größen",
-   "seen": 1111
+   "seen": 1096
   },
   "a": {
    "label": "Weitere Angebote",
-   "seen": 3202
+   "seen": 3167
   }
  }
 }
